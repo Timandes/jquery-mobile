@@ -31,32 +31,36 @@ define( [ "jquery", "../../jquery.mobile.core", "../../jquery.mobile.widget", ".
 				"paste": "_timeout",
 			});
 
-			// Issue 509: the browser is not providing scrollHeight properly until the styles load
-			if ( $.trim( this.element.val() ) ) {
-				// bind to the window load to make sure the height is calculated based on BOTH
-				// the DOM and CSS
-				// binding to pagechange here ensures that for pages loaded via
-				// ajax the height is recalculated without user input
-				this._on( true, $.mobile.window, {
-					"load": "_timeout",
-					"pagechange": "_timeout"
-				});
-			}
+			// binding to pageshow here ensures that for pages loaded via
+			// ajax the height is recalculated without user input
+			this._on( true, this.window, { "pageshow": "_prepareHeightUpdate" } );
 		},
 
 		_unbindAutogrow: function() {
 			this._off( this.element, "keyup change input paste" );
-			this._off( $.mobile.window, "load pagechange" );
+			this._off( this.window, "pageshow" );
 		},
 
 		keyupTimeout: null,
 
+		_prepareHeightUpdate: function( delay ) {
+			if ( this.keyupTimeout ) {
+				clearTimeout( this.keyupTimeout );
+			}
+			if ( delay === undefined ) {
+				this._updateHeight();
+			} else {
+				this.keyupTimeout = this._delay( "_updateHeight", delay );
+			}
+		},
+
 		_timeout: function() {
-			clearTimeout( this.keyupTimeout );
-			this.keyupTimeout = this._delay( "_updateHeight", this.options.keyupTimeoutBuffer );
+			this._prepareHeightUpdate( this.options.keyupTimeoutBuffer );
 		},
 
 		_updateHeight: function() {
+
+			this.keyupTimeout = 0;
 
 			this.element.css( "height", "0px" );
 
